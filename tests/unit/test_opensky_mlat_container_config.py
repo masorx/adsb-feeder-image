@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 ADSB_ROOT = (
     Path(__file__).parents[2]
     / "src/modules/adsb-feeder/filesystem/root/opt/adsb"
@@ -16,6 +15,7 @@ def test_primary_opensky_container_receives_global_mlat_policy():
     assert "MLAT_PRIVACY=${MLAT_PRIVACY}" in compose
     assert "MLAT_RESULTS_BEASTHOST=ultrafeeder" in compose
     assert "MLAT_RESULTS_BEASTPORT=31004" in compose
+    assert "/run/adsb-feeder-opensky:/run" in compose
 
 
 def test_stage2_opensky_container_receives_stage_mlat_policy():
@@ -25,6 +25,7 @@ def test_stage2_opensky_container_receives_stage_mlat_policy():
     assert "MLAT_PRIVACY=${MLAT_PRIVACY}" in compose
     assert "MLAT_RESULTS_BEASTHOST=uf_STAGE2NUM" in compose
     assert "MLAT_RESULTS_BEASTPORT=31004" in compose
+    assert "/run/adsb-feeder-opensky_STAGE2NUM:/run" in compose
 
 
 def test_opensky_mlat_endpoint_is_not_owned_by_adsb_im():

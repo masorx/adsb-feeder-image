@@ -1,5 +1,6 @@
-"""Tests for OpenSky receiver status reporting."""
+"""Tests for OpenSky receiver and MLAT status reporting."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -72,3 +73,48 @@ def test_status_is_cached_for_one_minute():
         status.get_opensky_data_status()
 
     status.get_json.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("idx", "expected"),
+    [
+        (0, "/run/adsb-feeder-opensky/mlat-client-stats.json"),
+        (2, "/run/adsb-feeder-opensky_2/mlat-client-stats.json"),
+    ],
+)
+def test_mlat_status_path_matches_compose_mount(idx, expected):
+    status = make_status()
+    status._idx = idx
+
+    assert status.opensky_mlat_path() == expected
+
+
+def test_opensky_mlat_status_uses_container_stats(tmp_path):
+    now = 2_000_000_000
+    stats_path = tmp_path / "mlat-client-stats.json"
+    stats_path.write_text(
+        json.dumps(
+            {
+                "now": now,
+                "good_sync_percentage_last_hour": 98,
+                "bad_sync_percentage_last_hour": 0,
+            }
+        )
+    )
+    status = make_status()
+    status._d.list_is_enabled.return_value = True
+
+    with patch("utils.agg_status.time.time", return_value=now):
+        status.get_mlat_status(path=stats_path)
+
+    assert status._mlat == T.Good
+
+
+def test_opensky_check_reads_mlat_status_file():
+    status = make_status()
+    status.get_opensky_data_status = MagicMock()
+    status.get_mlat_status = MagicMock()
+
+    status.check_impl()
+
+    status.get_mlat_status.assert_called_once_with(path="/run/adsb-feeder-opensky/mlat-client-stats.json")
